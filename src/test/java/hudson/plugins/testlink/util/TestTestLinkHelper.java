@@ -98,7 +98,7 @@ public class TestTestLinkHelper extends TestCase {
 		String testLinkJavaAPIProperties = "httpd.server=false, testlink.security=true, test";
 
 		TestLinkHelper.setTestLinkJavaAPIProperties(testLinkJavaAPIProperties,
-				listener);
+				listener.getLogger());
 
 		assertEquals(System.getProperties().get("httpd.server"), "false");
 	}

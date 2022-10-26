@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.jfree.chart.JFreeChart;
 import org.kohsuke.stapler.StaplerRequest;
@@ -46,11 +48,13 @@ public class TestLinkProjectAction extends AbstractTestLinkProjectAction {
 
     private static final int DEFAULT_GRAPH_WIDTH = 500;
     private static final int DEFAULT_GRAPH_HEIGHT = 200;
+    private static final Logger LOGGER = Logger.getLogger("hudson.plugins.testlink");
 
     private AbstractProject<?, ?> project;
 
     /**
-     * Used to figure out if we need to regenerate the graphs or not. Only used in newGraphNotNeeded() method. Key is
+     * Used to figure out if we need to regenerate the graphs or not. Only used in
+     * newGraphNotNeeded() method. Key is
      * the request URI and value is the number of builds for the project.
      */
     private transient Map<String, Integer> requestMap = new HashMap<String, Integer>();
@@ -70,7 +74,8 @@ public class TestLinkProjectAction extends AbstractTestLinkProjectAction {
     /**
      * Returns the last build action.
      * 
-     * @return the last build action or <code>null</code> if there is no such build action.
+     * @return the last build action or <code>null</code> if there is no such build
+     *         action.
      */
     public TestLinkBuildAction getLastBuildAction() {
         AbstractBuild<?, ?> lastBuild = getLastBuildWithTestLink();
@@ -84,7 +89,8 @@ public class TestLinkProjectAction extends AbstractTestLinkProjectAction {
     /**
      * Retrieves the last build with TestLink in the project.
      * 
-     * @return Last build with TestLink in the project or <code>null</code>, if there is no build with TestLink in the
+     * @return Last build with TestLink in the project or <code>null</code>, if
+     *         there is no build with TestLink in the
      *         project.
      */
     private AbstractBuild<?, ?> getLastBuildWithTestLink() {
@@ -97,7 +103,8 @@ public class TestLinkProjectAction extends AbstractTestLinkProjectAction {
 
     /**
      * 
-     * Show CCM html report f the latest build. If no builds are associated with CCM , returns info page.
+     * Show CCM html report f the latest build. If no builds are associated with CCM
+     * , returns info page.
      * 
      * @param req Stapler request
      * @param res Stapler response
@@ -151,14 +158,16 @@ public class TestLinkProjectAction extends AbstractTestLinkProjectAction {
     /**
      * Checks if it should display graph.
      * 
-     * @return <code>true</code> if it should display graph and <code>false</code> otherwise.
+     * @return <code>true</code> if it should display graph and <code>false</code>
+     *         otherwise.
      */
     public final boolean isDisplayGraph() {
         return project.getBuilds().size() > 0;
     }
 
     /**
-     * If number of builds hasn't changed and if checkIfModified() returns true, no need to regenerate the graph.
+     * If number of builds hasn't changed and if checkIfModified() returns true, no
+     * need to regenerate the graph.
      * Browser should reuse it's cached image
      * 
      * @param req
@@ -184,7 +193,8 @@ public class TestLinkProjectAction extends AbstractTestLinkProjectAction {
 
         if (prevNumBuilds == numBuilds && req.checkIfModified(t, res)) {
             /*
-             * checkIfModified() is after '&&' because we want it evaluated only if number of builds is different
+             * checkIfModified() is after '&&' because we want it evaluated only if number
+             * of builds is different
              */
             newGraphNotNeeded = true;
         }
@@ -198,10 +208,14 @@ public class TestLinkProjectAction extends AbstractTestLinkProjectAction {
             TestLinkBuildAction action = build.getAction(getBuildActionClass());
             if (action != null) {
                 final Report report = action.getReport();
-                dataset.add(report.getBlocked(), "Blocked", label);
-                dataset.add(report.getFailed(), "Failed", label);
-                dataset.add(report.getNotRun(), "Not Run", label);
-                dataset.add(report.getPassed(), "Passed", label);
+                if (report != null) {
+                    dataset.add(report.getBlocked(), "Blocked", label);
+                    dataset.add(report.getFailed(), "Failed", label);
+                    dataset.add(report.getNotRun(), "Not Run", label);
+                    dataset.add(report.getPassed(), "Passed", label);
+                } else {
+                    LOGGER.log(Level.INFO, "There is no report for action");
+                }
             }
         }
     }

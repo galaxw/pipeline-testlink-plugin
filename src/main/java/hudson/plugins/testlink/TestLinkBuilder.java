@@ -69,17 +69,17 @@ import hudson.tasks.Builder;
 public class TestLinkBuilder extends AbstractTestLinkBuilder {
 
 	private static final Logger LOGGER = Logger.getLogger("hudson.plugins.testlink");
-	
+
 	/**
 	 * The Descriptor of this Builder. It contains the TestLink installation.
 	 */
 	@Extension
 	public static final TestLinkBuilderDescriptor DESCRIPTOR = new TestLinkBuilderDescriptor();
 
-	
 	@DataBoundConstructor
 	public TestLinkBuilder(String testLinkName, String testProjectName,
-			String testPlanName, String platformName, String buildName, String customFields, String testPlanCustomFields,
+			String testPlanName, String platformName, String buildName, String customFields,
+			String testPlanCustomFields,
 			Boolean executionStatusNotRun, Boolean executionStatusPassed,
 			Boolean executionStatusFailed, Boolean executionStatusBlocked,
 			List<BuildStep> singleBuildSteps,
@@ -89,8 +89,9 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 			Boolean transactional, Boolean failedTestsMarkBuildAsFailure,
 			Boolean failIfNoResults, Boolean failOnNotRun, List<ResultSeeker> resultSeekers) {
 		super(testLinkName, testProjectName, testPlanName, platformName, buildName,
-				customFields, testPlanCustomFields, singleBuildSteps, beforeIteratingAllTestCasesBuildSteps, iterativeBuildSteps,
-				afterIteratingAllTestCasesBuildSteps, transactional, failedTestsMarkBuildAsFailure, 
+				customFields, testPlanCustomFields, singleBuildSteps, beforeIteratingAllTestCasesBuildSteps,
+				iterativeBuildSteps,
+				afterIteratingAllTestCasesBuildSteps, transactional, failedTestsMarkBuildAsFailure,
 				failIfNoResults, failOnNotRun, resultSeekers);
 	}
 
@@ -100,9 +101,9 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 	@Override
 	public boolean perform(AbstractBuild<?, ?> build, Launcher launcher,
 			BuildListener listener) throws InterruptedException, IOException {
-		
+
 		LOGGER.log(Level.INFO, "TestLink builder started");
-		
+
 		this.failure = false;
 
 		// TestLink installation
@@ -113,7 +114,7 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 			throw new AbortException(Messages.TestLinkBuilder_InvalidTLAPI());
 		}
 
-		TestLinkHelper.setTestLinkJavaAPIProperties(installation.getTestLinkJavaAPIProperties(), listener);
+		TestLinkHelper.setTestLinkJavaAPIProperties(installation.getTestLinkJavaAPIProperties(), listener.getLogger());
 
 		final TestLinkSite testLinkSite;
 		final TestCaseWrapper[] automatedTestCases;
@@ -132,33 +133,37 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 			final String buildName = TestLinkHelper.expandVariable(build.getBuildVariableResolver(),
 					build.getEnvironment(listener), getBuildName());
 			final String buildNotes = Messages.TestLinkBuilder_Build_Notes();
-			if(LOGGER.isLoggable(Level.FINE)) {
-				LOGGER.log(Level.FINE, "TestLink project name: ["+testProjectName+"]");
-				LOGGER.log(Level.FINE, "TestLink plan name: ["+testPlanName+"]");
-				LOGGER.log(Level.FINE, "TestLink platform name: ["+platformName+"]");
-				LOGGER.log(Level.FINE, "TestLink build name: ["+buildName+"]");
-				LOGGER.log(Level.FINE, "TestLink build notes: ["+buildNotes+"]");
+			if (LOGGER.isLoggable(Level.FINE)) {
+				LOGGER.log(Level.FINE, "TestLink project name: [" + testProjectName + "]");
+				LOGGER.log(Level.FINE, "TestLink plan name: [" + testPlanName + "]");
+				LOGGER.log(Level.FINE, "TestLink platform name: [" + platformName + "]");
+				LOGGER.log(Level.FINE, "TestLink build name: [" + buildName + "]");
+				LOGGER.log(Level.FINE, "TestLink build notes: [" + buildNotes + "]");
 			}
 			// TestLink Site object
-			testLinkSite = this.getTestLinkSite(testLinkUrl, testLinkDevKey, testProjectName, testPlanName, platformName, buildName, buildNotes);
-			
-			if (StringUtils.isNotBlank(platformName) && testLinkSite.getPlatform() == null) 
-			    listener.getLogger().println(Messages.TestLinkBuilder_PlatformNotFound(platformName));
-			
-			final String[] testCaseCustomFieldsNames = TestLinkHelper.createArrayOfCustomFieldsNames(build.getBuildVariableResolver(), build.getEnvironment(listener), this.getCustomFields());
+			testLinkSite = this.getTestLinkSite(testLinkUrl, testLinkDevKey, testProjectName, testPlanName,
+					platformName, buildName, buildNotes);
+
+			if (StringUtils.isNotBlank(platformName) && testLinkSite.getPlatform() == null)
+				listener.getLogger().println(Messages.TestLinkBuilder_PlatformNotFound(platformName));
+
+			final String[] testCaseCustomFieldsNames = TestLinkHelper.createArrayOfCustomFieldsNames(
+					build.getBuildVariableResolver(), build.getEnvironment(listener), this.getCustomFields());
 			// Array of automated test cases
 			TestCase[] testCases = testLinkSite.getAutomatedTestCases(testCaseCustomFieldsNames);
 
 			// Retrieve custom fields in test plan
-			final String[] testPlanCustomFieldsNames = TestLinkHelper.createArrayOfCustomFieldsNames(build.getBuildVariableResolver(), build.getEnvironment(listener), this.getTestPlanCustomFields());
+			final String[] testPlanCustomFieldsNames = TestLinkHelper.createArrayOfCustomFieldsNames(
+					build.getBuildVariableResolver(), build.getEnvironment(listener), this.getTestPlanCustomFields());
 			testPlan = testLinkSite.getTestPlanWithCustomFields(testPlanCustomFieldsNames);
 
 			// Transforms test cases into test case wrappers
 			automatedTestCases = this.transform(testCases);
-			
+
 			testCases = null;
 
-			listener.getLogger().println(Messages.TestLinkBuilder_ShowFoundAutomatedTestCases(automatedTestCases.length));
+			listener.getLogger()
+					.println(Messages.TestLinkBuilder_ShowFoundAutomatedTestCases(automatedTestCases.length));
 
 			// Sorts test cases by each execution order (this info comes from
 			// TestLink)
@@ -171,14 +176,15 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 			e.printStackTrace(listener.fatalError(e.getMessage()));
 			throw new AbortException(Messages.TestLinkBuilder_TestLinkCommunicationError());
 		}
-		
-		for(TestCaseWrapper tcw : automatedTestCases) {
-		    testLinkSite.getReport().addTestCase(tcw);
-		    if(LOGGER.isLoggable(Level.FINE)) {
-		        LOGGER.log(Level.FINE, "TestLink automated test case ID [" + tcw.getId() + "], name [" +tcw.getName()+ "]");
-		    }
+
+		for (TestCaseWrapper tcw : automatedTestCases) {
+			testLinkSite.getReport().addTestCase(tcw);
+			if (LOGGER.isLoggable(Level.FINE)) {
+				LOGGER.log(Level.FINE,
+						"TestLink automated test case ID [" + tcw.getId() + "], name [" + tcw.getName() + "]");
+			}
 		}
-		
+
 		listener.getLogger().println(Messages.TestLinkBuilder_ExecutingSingleBuildSteps());
 		this.executeSingleBuildSteps(automatedTestCases.length, testPlan, testLinkSite, build, launcher, listener);
 
@@ -190,10 +196,11 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 		// contains attachments, platform and notes.
 		try {
 			listener.getLogger().println(Messages.Results_LookingForTestResults());
-			
-			if(getResultSeekers() != null) {
+
+			if (getResultSeekers() != null) {
 				for (ResultSeeker resultSeeker : getResultSeekers()) {
-					LOGGER.log(Level.INFO, "Seeking test results. Using: " + resultSeeker.getDescriptor().getDisplayName());
+					LOGGER.log(Level.INFO,
+							"Seeking test results. Using: " + resultSeeker.getDescriptor().getDisplayName());
 					resultSeeker.seek(automatedTestCases, build, launcher, listener, testLinkSite);
 				}
 			}
@@ -209,30 +216,30 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 		// test cases with each found status.
 		final Report report = testLinkSite.getReport();
 		report.tally();
-		
+
 		listener.getLogger().println(Messages.TestLinkBuilder_ShowFoundTestResults(report.getTestsTotal()));
-		
+
 		final TestLinkBuildAction buildAction = new TestLinkBuildAction(report);
 		build.addAction(buildAction);
-		
-		if(report.getTestsTotal() <= 0 && this.getFailIfNoResults() == Boolean.TRUE) {
+
+		if (report.getTestsTotal() <= 0 && this.getFailIfNoResults().equals(Boolean.TRUE)) {
 			listener.getLogger().println("No test results found. Setting the build result as FAILURE.");
 			build.setResult(Result.FAILURE);
 		} else if (report.getFailed() > 0) {
 			if (this.failedTestsMarkBuildAsFailure != null && this.failedTestsMarkBuildAsFailure) {
-			    listener.getLogger().println("There are failed tests, setting the build result as FAILURE.");
+				listener.getLogger().println("There are failed tests, setting the build result as FAILURE.");
 				build.setResult(Result.FAILURE);
 			} else {
-			    listener.getLogger().println("There are failed tests, setting the build result as UNSTABLE.");
+				listener.getLogger().println("There are failed tests, setting the build result as UNSTABLE.");
 				build.setResult(Result.UNSTABLE);
 			}
 		} else if (this.getFailOnNotRun() != null && this.getFailOnNotRun() && report.getNotRun() > 0) {
-		    listener.getLogger().println("There are not run tests, setting the build result as FAILURE.");
-		    build.setResult(Result.FAILURE);
+			listener.getLogger().println("There are not run tests, setting the build result as FAILURE.");
+			build.setResult(Result.FAILURE);
 		}
 
 		LOGGER.log(Level.INFO, "TestLink builder finished");
-		
+
 		// end
 		return Boolean.TRUE;
 	}
@@ -242,12 +249,13 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 	 * @return
 	 */
 	private TestCaseWrapper[] transform(TestCase[] testCases) {
-		if(testCases == null || testCases.length == 0) {
+		if (testCases == null || testCases.length == 0) {
 			return new TestCaseWrapper[0];
 		}
-		
+
 		List<TestCaseWrapper> automatedTestCases = new ArrayList<TestCaseWrapper>();
-		for(TestCase testCase : testCases) {
+		for (TestCase testCase : testCases) {
+			LOGGER.log(Level.INFO, testCase.toString());
 			TestCaseWrapper wrapper = new TestCaseWrapper(testCase);
 			automatedTestCases.add(wrapper);
 		}
@@ -259,9 +267,9 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 	 * 
 	 * @throws MalformedURLException
 	 */
-	public TestLinkSite getTestLinkSite(String testLinkUrl, String testLinkDevKey, 
-	        String testProjectName, String testPlanName, String platformName, 
-	        String buildName, String buildNotes) throws MalformedURLException {
+	public TestLinkSite getTestLinkSite(String testLinkUrl, String testLinkDevKey,
+			String testProjectName, String testPlanName, String platformName,
+			String buildName, String buildNotes) throws MalformedURLException {
 		final TestLinkAPI api;
 		final URL url = new URL(testLinkUrl);
 		api = new TestLinkAPI(url, testLinkDevKey);
@@ -270,11 +278,11 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 		final TestPlan testPlan = api.getTestPlanByName(testPlanName, testProjectName);
 
 		Platform platform = null;
-		if (StringUtils.isNotBlank(platformName)){
-			final Platform platforms[] = api.getProjectPlatforms(testProject.getId());		
+		if (StringUtils.isNotBlank(platformName)) {
+			final Platform platforms[] = api.getProjectPlatforms(testProject.getId());
 			for (Platform p : platforms) {
 				if (p.getName().equals(platformName)) {
-				    platform = p;
+					platform = p;
 					break;
 				}
 			}
@@ -287,39 +295,43 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 	/**
 	 * Executes the list of single build steps.
 	 *
-	 * @param numberOfTests number of tests 
-	 * @param testLinkSite TestLink site
-	 * @param build Jenkins build.
-	 * @param launcher job launcher
-	 * @param listener build listener
+	 * @param numberOfTests number of tests
+	 * @param testLinkSite  TestLink site
+	 * @param build         Jenkins build.
+	 * @param launcher      job launcher
+	 * @param listener      build listener
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	protected void executeSingleBuildSteps(int numberOfTests, TestPlan testPlan, TestLinkSite testLinkSite, AbstractBuild<?, ?> build,
+	protected void executeSingleBuildSteps(int numberOfTests, TestPlan testPlan, TestLinkSite testLinkSite,
+			AbstractBuild<?, ?> build,
 			Launcher launcher, BuildListener listener) throws IOException,
 			InterruptedException {
 		if (singleBuildSteps != null) {
 			for (BuildStep b : singleBuildSteps) {
-			    final EnvVars iterativeEnvVars = TestLinkHelper.buildTestCaseEnvVars(
-			            numberOfTests, 
-                        testLinkSite.getTestProject(),
-                        testPlan,
-                        testLinkSite.getBuild(), 
-                        listener);
-                build.addAction(new EnvironmentContributingAction() {
-                    public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
-                        env.putAll(iterativeEnvVars);
-                    }
-                    public String getUrlName() {
-                        return null;
-                    }
-                    public String getIconFileName() {
-                        return null;
-                    }
-                    public String getDisplayName() {
-                        return null;
-                    }
-                });
+				final EnvVars iterativeEnvVars = TestLinkHelper.buildTestCaseEnvVars(
+						numberOfTests,
+						testLinkSite.getTestProject(),
+						testPlan,
+						testLinkSite.getBuild(),
+						listener);
+				build.addAction(new EnvironmentContributingAction() {
+					public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
+						env.putAll(iterativeEnvVars);
+					}
+
+					public String getUrlName() {
+						return null;
+					}
+
+					public String getIconFileName() {
+						return null;
+					}
+
+					public String getDisplayName() {
+						return null;
+					}
+				});
 				final boolean success = b.perform(build, launcher, listener);
 				if (!success) {
 					this.failure = Boolean.TRUE;
@@ -336,16 +348,16 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 	 * </p>
 	 * 
 	 * @param automatedTestCases
-	 *            array of automated test cases
+	 *                           array of automated test cases
 	 * @param testLinkSite
-	 *            The TestLink Site object
+	 *                           The TestLink Site object
 	 * @param launcher
 	 * @param listener
 	 * @throws InterruptedException
 	 * @throws IOException
 	 */
 	protected void executeIterativeBuildSteps(TestCaseWrapper[] automatedTestCases,
-											  TestPlan testPlan,
+			TestPlan testPlan,
 			TestLinkSite testLinkSite, AbstractBuild<?, ?> build,
 			Launcher launcher, BuildListener listener) throws IOException,
 			InterruptedException {
@@ -365,20 +377,23 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 			} else {
 				if (iterativeBuildSteps != null) {
 					final EnvVars iterativeEnvVars = TestLinkHelper.buildTestCaseEnvVars(automatedTestCase,
-									testLinkSite.getTestProject(),
-									testPlan,
-									testLinkSite.getBuild(), listener);
+							testLinkSite.getTestProject(),
+							testPlan,
+							testLinkSite.getBuild(), listener);
 
 					build.addAction(new EnvironmentContributingAction() {
 						public void buildEnvVars(AbstractBuild<?, ?> build, EnvVars env) {
 							env.putAll(iterativeEnvVars);
 						}
+
 						public String getUrlName() {
 							return null;
 						}
+
 						public String getIconFileName() {
 							return null;
 						}
+
 						public String getDisplayName() {
 							return null;
 						}
@@ -402,9 +417,10 @@ public class TestLinkBuilder extends AbstractTestLinkBuilder {
 			}
 		}
 	}
-	
+
 	@Override
 	public Descriptor<Builder> getDescriptor() {
-	    return (TestLinkBuilderDescriptor) super.getDescriptor();
+		return (TestLinkBuilderDescriptor) super.getDescriptor();
 	}
+
 }

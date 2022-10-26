@@ -34,6 +34,15 @@ avoid including sensitive data, as attachments can take a while to be
 deleted from JIRA, as the process is manual and quite troublesome
 ![(smile)](https://wiki.jenkins.io/s/en_GB/8100/5084f018d64a97dc638ca9a178856f851ea353ff/_/images/icons/emoticons/smile.svg)
 
+## Support jenkins pipeline.
+
+It is not fully support, just works for me.
+The example code here:
+
+```
+testlink testLinkName: "testlink3.16", testProjectName: "toolchain", testPlanName: "0.5.0", platformName: "ubuntu2004", buildName: "1", customFields: "name", testPlanCustomFields: "", includePattern: "**/test.xml", keyCustomField: "name"
+```
+
 ## Jenkins TestLink Plug-in Tutorial
 
 Check out this tutorial with step-by-step instructions on how to

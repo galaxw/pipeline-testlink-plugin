@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -45,6 +47,7 @@ import br.eti.kinoshita.testlinkjavaapi.model.TestCaseStep;
 public class TestCaseWrapper implements Serializable {
 
 	private static final long serialVersionUID = 6440057711152759081L;
+	private static final Logger LOGGER = Logger.getLogger("hudson.plugins.testlink");
 
 	/**
 	 * A list of custom field and status, used to allow the user to use a comma
@@ -77,10 +80,10 @@ public class TestCaseWrapper implements Serializable {
 	public TestCaseWrapper() {
 		this(new TestCase());
 	}
-	
+
 	/**
 	 * @param testCase
-	 *            wrapped automated test case.
+	 *                 wrapped automated test case.
 	 */
 	public TestCaseWrapper(TestCase testCase) {
 		this.testCase = testCase;
@@ -93,9 +96,9 @@ public class TestCaseWrapper implements Serializable {
 	 * Add a custom field name and its execution status.
 	 * 
 	 * @param customField
-	 *            custom field name
+	 *                        custom field name
 	 * @param executionStatus
-	 *            execution status
+	 *                        execution status
 	 */
 	public void addCustomFieldAndStatus(String customField,
 			ExecutionStatus executionStatus) {
@@ -141,12 +144,14 @@ public class TestCaseWrapper implements Serializable {
 	}
 
 	public ExecutionStatus getExecutionStatus() {
-		return this.testCase.getExecutionStatus() == null ? ExecutionStatus.NOT_RUN : this.testCase.getExecutionStatus();
+		return this.testCase.getExecutionStatus() == null ? ExecutionStatus.NOT_RUN
+				: this.testCase.getExecutionStatus();
 	}
-	
+
 	/**
-	 * Calculates the new value of this wrapped test case execution status, 
+	 * Calculates the new value of this wrapped test case execution status,
 	 * given a number of custom fields.
+	 * 
 	 * @return new value of this wrapped test case execution status
 	 */
 	public ExecutionStatus getExecutionStatus(String keyCustomFieldName) {
@@ -169,7 +174,7 @@ public class TestCaseWrapper implements Serializable {
 	public Integer getId() {
 		return this.testCase.getId();
 	}
-	
+
 	public void setId(Integer id) {
 		this.testCase.setId(id);
 	}
@@ -183,33 +188,36 @@ public class TestCaseWrapper implements Serializable {
 
 		this.testCase.setCustomFields(customFields);
 	}
-	
+
 	public List<CustomField> getCustomFields() {
 		return this.testCase.getCustomFields();
 	}
-	
+
 	public String[] getKeyCustomFieldValues(final String keyCustomFieldName) {
 		String keyCustomFieldValue = null;
-		for(CustomField customField : this.getCustomFields()) {
-			if(customField.getName().equals(keyCustomFieldName)) {
+		LOGGER.log(Level.INFO, "keyCustomFieldName: " + keyCustomFieldName);
+		for (CustomField customField : this.getCustomFields()) {
+			LOGGER.log(Level.INFO, "customField.getName(): " + customField.getName());
+			if (customField.getName().equals(keyCustomFieldName)) {
 				keyCustomFieldValue = customField.getValue();
 				break;
 			}
 		}
+		LOGGER.log(Level.INFO, "keyCustomFieldValue: " + keyCustomFieldValue);
 		return this.split(keyCustomFieldValue);
 	}
-	
+
 	public String getKeyCustomFieldValue(final String keyCustomFieldName) {
 		String keyCustomFieldValue = null;
-		for(CustomField customField : this.getCustomFields()) {
-			if(customField.getName().equals(keyCustomFieldName)) {
+		for (CustomField customField : this.getCustomFields()) {
+			if (customField.getName().equals(keyCustomFieldName)) {
 				keyCustomFieldValue = customField.getValue();
 				break;
 			}
 		}
 		return keyCustomFieldValue;
 	}
-	
+
 	/**
 	 * Splits a String by comma and gets an array of Strings.
 	 */
@@ -242,55 +250,55 @@ public class TestCaseWrapper implements Serializable {
 	public Integer getInternalId() {
 		return testCase.getInternalId();
 	}
-	
+
 	public void setInternalId(Integer internalId) {
 		this.testCase.setInternalId(internalId);
 	}
-	
+
 	public Integer getExecutionOrder() {
 		return this.testCase.getExecutionOrder();
 	}
-	
+
 	public void setExecutionOrder(Integer executionOrder) {
 		this.testCase.setExecutionOrder(executionOrder);
 	}
-	
+
 	public Integer getTestSuiteId() {
 		return this.testCase.getTestSuiteId();
 	}
-	
+
 	public void setTestSuiteId(Integer testSuiteId) {
 		this.testCase.setTestSuiteId(testSuiteId);
 	}
-	
+
 	public Integer getTestProjectId() {
 		return this.testCase.getTestProjectId();
 	}
-	
+
 	public void setTestProjectId(Integer testProjectId) {
 		this.testCase.setTestProjectId(testProjectId);
 	}
-	
+
 	public String getAuthorLogin() {
 		return this.testCase.getAuthorLogin();
 	}
-	
+
 	public void setAuthorLogin(String authorLogin) {
 		this.testCase.setAuthorLogin(authorLogin);
 	}
-	
+
 	public String getSummary() {
 		return this.testCase.getSummary();
 	}
-	
+
 	public void setSummary(String summary) {
 		this.testCase.setSummary(summary);
 	}
-	
+
 	public List<TestCaseStep> getSteps() {
 		return this.testCase.getSteps();
 	}
-	
+
 	public void setSteps(List<TestCaseStep> steps) {
 		this.testCase.setSteps(steps);
 	}
@@ -298,11 +306,11 @@ public class TestCaseWrapper implements Serializable {
 	public Integer getVersion() {
 		return testCase.getVersion();
 	}
-	
+
 	public String getFullExternalId() {
 		return testCase.getFullExternalId();
 	}
-	
+
 	public void setFullExternalId(String fullExternalId) {
 		this.testCase.setFullExternalId(fullExternalId);
 	}
